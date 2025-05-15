@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube BGMプレイヤー（モバイル対応）</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f0f0f0;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.5rem;
+    }
+
+    #player-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    iframe {
+      width: 100%;
+      max-width: 560px;
+      height: calc(560px * 9 / 16);
+      margin-bottom: 10px;
+    }
+
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      max-width: 400px;
+      padding: 8px;
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+
+    button {
+      padding: 10px 15px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    #button-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(45%, 1fr));
+      gap: 10px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    @media (min-width: 768px) {
+      #button-grid {
+        grid-template-columns: repeat(5, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>YouTube BGMプレイヤー</h1>
+
+  <div id="player-container">
+    <input type="text" id="youtubeUrl" placeholder="YouTubeのURLを入力" />
+    <button onclick="loadVideo()">▶️ 再生</button>
+
+    <div id="player"></div>
+
+    <div id="controls">
+      <button onclick="playVideo()">▶️ 再生</button>
+      <button onclick="pauseVideo()">⏸ 停止</button>
+      <label>
+        🔊 音量
+        <input type="range" min="0" max="100" value="50" onchange="setVolume(this.value)">
+      </label>
+    </div>
+  </div>
+
+  <div id="button-grid">
+    <script>
+      for (let i = 1; i <= 20; i++) {
+        document.write(`<button onclick="alert('ボタン${i}を押しました')">ボタン${i}</button>`);
+      }
+    </script>
+  </div>
+
+  <!-- YouTube API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    let player;
+
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        height: '315',
+        width: '560',
+        videoId: '',
+        events: {
+          'onReady': function () {
+            player.setVolume(50);
+          }
+        }
+      });
+    }
+
+    function extractVideoId(url) {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[2].length == 11) ? match[2] : null;
+    }
+
+    function loadVideo() {
+      const url = document.getElementById("youtubeUrl").value;
+      const videoId = extractVideoId(url);
+      if (videoId) {
+        player.loadVideoById(videoId);
+      } else {
+        alert("有効なYouTubeのURLを入力してください。");
+      }
+    }
+
+    function playVideo() {
+      if (player) player.playVideo();
+    }
+
+    function pauseVideo() {
+      if (player) player.pauseVideo();
+    }
+
+    function setVolume(value) {
+      if (player) player.setVolume(parseInt(value));
+    }
+  </script>
+</body>
+</html>
