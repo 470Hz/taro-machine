@@ -1,147 +1,240 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube BGMプレイヤー（モバイル対応）</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background-color: #f0f0f0;
-      margin: 0;
-      padding: 20px;
-      box-sizing: border-box;
-    }
-
-    h1 {
-      text-align: center;
-      font-size: 1.5rem;
-    }
-
-    #player-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
-    iframe {
-      width: 100%;
-      max-width: 560px;
-      height: calc(560px * 9 / 16);
-      margin-bottom: 10px;
-    }
-
-    #controls {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    input[type="text"] {
-      width: 100%;
-      max-width: 400px;
-      padding: 8px;
-      margin-bottom: 10px;
-      font-size: 1rem;
-    }
-
-    button {
-      padding: 10px 15px;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-
-    #button-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(45%, 1fr));
-      gap: 10px;
-      max-width: 500px;
-      margin: 0 auto;
-    }
-
-    @media (min-width: 768px) {
-      #button-grid {
-        grid-template-columns: repeat(5, 1fr);
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MP3プレーヤー</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 10px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            font-size: 1.5em;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 10px;
+        }
+        .player {
+            background-color: white;
+            border-radius: 5px;
+            padding: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .play-button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 8px;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .play-button:hover {
+            background-color: #3a80d2;
+        }
+        .play-button.playing {
+            background-color: #e24a4a;
+        }
+        .file-input {
+            display: none;
+        }
+        .file-label {
+            display: block;
+            width: 100%;
+            padding: 6px;
+            margin-bottom: 8px;
+            background-color: #5cb85c;
+            color: white;
+            text-align: center;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        .file-label:hover {
+            background-color: #4cae4c;
+        }
+        .volume-control {
+            width: 100%;
+            margin-top: 5px;
+        }
+        .song-name {
+            font-size: 0.8em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-bottom: 5px;
+        }
+    </style>
 </head>
 <body>
-
-  <h1>YouTube BGMプレイヤー</h1>
-
-  <div id="player-container">
-    <input type="text" id="youtubeUrl" placeholder="YouTubeのURLを入力" />
-    <button onclick="loadVideo()">▶️ 再生</button>
-
-    <div id="player"></div>
-
-    <div id="controls">
-      <button onclick="playVideo()">▶️ 再生</button>
-      <button onclick="pauseVideo()">⏸ 停止</button>
-      <label>
-        🔊 音量
-        <input type="range" min="0" max="100" value="50" onchange="setVolume(this.value)">
-      </label>
+    <h1>MP3プレーヤー</h1>
+    <div class="players-grid" id="playersContainer">
+        <!-- ここにプレーヤーが動的に追加されます -->
     </div>
-  </div>
 
-  <div id="button-grid">
     <script>
-      for (let i = 1; i <= 20; i++) {
-        document.write(`<button onclick="alert('ボタン${i}を押しました')">ボタン${i}</button>`);
-      }
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('playersContainer');
+            const playerCount = 20;
+            const players = [];
+
+            // プレーヤーを生成
+            for (let i = 0; i < playerCount; i++) {
+                createPlayer(i);
+            }
+
+            function createPlayer(index) {
+                // プレーヤー要素の作成
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'player';
+                
+                // ボタンとコントロールの作成
+                const playButton = document.createElement('button');
+                playButton.className = 'play-button';
+                playButton.id = `playButton${index}`;
+                playButton.textContent = '再生';
+                playButton.setAttribute('data-clicks', '0'); // クリック回数を追跡
+
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.id = `fileInput${index}`;
+                fileInput.className = 'file-input';
+                fileInput.accept = 'audio/mpeg, audio/mp3';
+
+                const fileLabel = document.createElement('label');
+                fileLabel.htmlFor = `fileInput${index}`;
+                fileLabel.className = 'file-label';
+                fileLabel.textContent = 'MP3を選択';
+
+                const songName = document.createElement('div');
+                songName.className = 'song-name';
+                songName.id = `songName${index}`;
+                songName.textContent = '曲が選択されていません';
+
+                const volumeSlider = document.createElement('input');
+                volumeSlider.type = 'range';
+                volumeSlider.min = '0';
+                volumeSlider.max = '100';
+                volumeSlider.value = '80';
+                volumeSlider.className = 'volume-control';
+                volumeSlider.id = `volumeSlider${index}`;
+
+                // 要素の追加
+                playerDiv.appendChild(playButton);
+                playerDiv.appendChild(fileInput);
+                playerDiv.appendChild(fileLabel);
+                playerDiv.appendChild(songName);
+                playerDiv.appendChild(volumeSlider);
+                container.appendChild(playerDiv);
+
+                // オーディオオブジェクトの作成
+                const audio = new Audio();
+                audio.volume = 0.8;
+                players[index] = {
+                    audio: audio,
+                    isPlaying: false,
+                    hasFile: false
+                };
+
+                // ファイル選択時のイベント
+                fileInput.addEventListener('change', function(e) {
+                    if (this.files && this.files[0]) {
+                        const file = this.files[0];
+                        const objectURL = URL.createObjectURL(file);
+                        
+                        audio.src = objectURL;
+                        players[index].hasFile = true;
+                        
+                        // ファイル名を表示（長い場合は省略）
+                        let displayName = file.name;
+                        if (displayName.length > 25) {
+                            displayName = displayName.substring(0, 22) + '...';
+                        }
+                        songName.textContent = displayName;
+                        
+                        // 再生ボタンのリセット
+                        playButton.textContent = '再生';
+                        playButton.classList.remove('playing');
+                        playButton.setAttribute('data-clicks', '0');
+                        players[index].isPlaying = false;
+                    }
+                });
+
+                // 再生ボタンのイベント
+                playButton.addEventListener('click', function() {
+                    // ファイルが選択されていない場合は何もしない
+                    if (!players[index].hasFile) {
+                        alert('先にMP3ファイルを選択してください');
+                        return;
+                    }
+                    
+                    // クリック回数を追跡
+                    let clicks = parseInt(this.getAttribute('data-clicks')) + 1;
+                    this.setAttribute('data-clicks', clicks);
+                    
+                    // 2回クリックされた場合は必ず停止
+                    if (clicks >= 2) {
+                        stopAudio(index);
+                        this.setAttribute('data-clicks', '0'); // クリックカウンターをリセット
+                        return;
+                    }
+                    
+                    // 通常の再生/停止切り替え
+                    togglePlay(index);
+                });
+
+                // 音量スライダーのイベント
+                volumeSlider.addEventListener('input', function() {
+                    audio.volume = this.value / 100;
+                });
+
+                // 曲の終了時のイベント
+                audio.addEventListener('ended', function() {
+                    stopAudio(index);
+                });
+            }
+
+            function togglePlay(index) {
+                const player = players[index];
+                const button = document.getElementById(`playButton${index}`);
+                
+                // 他のすべての曲を停止
+                players.forEach((p, i) => {
+                    if (i !== index && p.isPlaying) {
+                        stopAudio(i);
+                    }
+                });
+                
+                // 現在の曲の再生/停止を切り替え
+                if (player.isPlaying) {
+                    stopAudio(index);
+                } else {
+                    player.audio.play();
+                    player.isPlaying = true;
+                    button.textContent = '停止';
+                    button.classList.add('playing');
+                }
+            }
+
+            function stopAudio(index) {
+                const player = players[index];
+                const button = document.getElementById(`playButton${index}`);
+                
+                player.audio.pause();
+                player.isPlaying = false;
+                button.textContent = '再生';
+                button.classList.remove('playing');
+            }
+        });
     </script>
-  </div>
-
-  <!-- YouTube API -->
-  <script src="https://www.youtube.com/iframe_api"></script>
-  <script>
-    let player;
-
-    function onYouTubeIframeAPIReady() {
-      player = new YT.Player('player', {
-        height: '315',
-        width: '560',
-        videoId: '',
-        events: {
-          'onReady': function () {
-            player.setVolume(50);
-          }
-        }
-      });
-    }
-
-    function extractVideoId(url) {
-      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-      const match = url.match(regExp);
-      return (match && match[2].length == 11) ? match[2] : null;
-    }
-
-    function loadVideo() {
-      const url = document.getElementById("youtubeUrl").value;
-      const videoId = extractVideoId(url);
-      if (videoId) {
-        player.loadVideoById(videoId);
-      } else {
-        alert("有効なYouTubeのURLを入力してください。");
-      }
-    }
-
-    function playVideo() {
-      if (player) player.playVideo();
-    }
-
-    function pauseVideo() {
-      if (player) player.pauseVideo();
-    }
-
-    function setVolume(value) {
-      if (player) player.setVolume(parseInt(value));
-    }
-  </script>
 </body>
 </html>
